@@ -1,0 +1,1493 @@
+
+/*****************************************/
+typedef byte 	u8; 
+typedef word 	u16;
+typedef eword	u24;
+typedef dword 	u32;
+/*****************************************/
+#define RGB_NUM 6		//RGB数量
+#define	TURN_ON_LED		Led = 1;			//测试用的灯低电平为开灯
+#define	TURN_OFF_LED	Led = 0;
+
+RGB bit pa.5;
+RGB_EN bit pa.7;
+KEY bit pa.4;
+Led bit	pa.3;
+Touch_Key bit pa.0;
+
+Test_IO bit pa.6;
+
+
+bit qufan ;
+#define QEFAN {if(qufan == 0){qufan = 1;}else{qufan = 1;}}
+
+
+
+void IO_Init(void)
+{
+	$ RGB out,high;		//RGB数据发送引脚
+	$ RGB_EN out,low;	//RGB电源引脚
+
+	paph.0 = 1;			//上拉
+	pac.0 = 0;
+	pa.0 = 1;
+//	$ Touch_Key in;		//触摸按键
+
+	paph.4 = 1;		
+	$ KEY in;		//物理按键 
+
+	$ Led out,low;	//LED灯
+
+	$ Test_IO out,high;
+}
+
+
+
+u8 Color_R;
+u8 Color_G;
+u8 Color_B;
+u24 Color_Data;
+
+bit R_Flag;
+bit G_Flag;
+bit B_FLag;
+bit R_Flag1;
+bit G_Flag1;
+bit B_FLag1;
+
+
+
+u8 Temp_R;
+u8 Temp_G;
+u8 Temp_B;
+u8 Color_Flag;
+u8 Color_Flag1;
+u8 Test_Flag;
+u8 RGB_Mode;
+
+u8 Key_Cont;
+u8 LED_Mode;
+bit Key_Flag
+u8 Touch_Cont;
+bit Touch_Flag;
+
+
+u8 Test_Mode;
+u8 Test_Flag1;
+bit Flag_a;
+
+void Sys_Init(void)
+{
+
+	Test_Mode = 0;
+	Flag_a = 0;
+
+	Color_R = 5;
+	Color_G = 5;
+	Color_B = 5;
+	Color_Data = 0;
+
+	R_Flag = 1;
+	G_Flag = 0;
+	B_Flag = 0;
+	R_Flag1 = 1;
+	G_Flag1 = 0;
+	B_Flag1 = 0;
+
+
+	 Temp_R = 5;
+	 Temp_G = 5;
+	 Temp_B = 5;
+	 Color_Flag = 2;
+	 Color_Flag1 = 2;
+	 Test_Flag = 0;
+
+	 RGB_Mode = 0;
+
+	Key_Cont = 0;
+	LED_Mode = 0;
+	Key_Flag = 1;
+	Touch_Cont = 0;
+	Touch_Flag = 0;
+
+
+
+}
+
+
+
+
+#if 1	//按键扫描
+void Key_Scan(void)
+{
+	if((KEY == 0) && (Key_Flag))	//按键按下
+	{
+		Key_Cont++;
+		if(Key_Cont > 15)
+		{
+			LED_Mode++;
+			if(LED_Mode > 2)
+			{
+				LED_Mode = 0;
+			}
+		//	Key_Cont = 0;
+			Key_Flag = 0;
+	//		.printf("%d\r\n",LED_Mode);
+		}	
+	}
+	else if(KEY)
+	{
+		Key_Cont = 0;
+		Key_Flag = 1;
+	}
+}
+
+
+void Touch_Scan(void)
+{
+	if((Touch_Key == 0) && (Touch_Flag))
+	{
+		Touch_Cont++;
+		if(Touch_Cont > 15)
+		{
+			LED_Mode++;
+			if(LED_Mode > 2)
+			{
+				LED_Mode = 0;
+			}
+		//	Touch_Cont = 0;
+			Touch_Flag = 0;
+	//		.printf("%d\r\n",LED_Mode);
+		}
+	}
+	else if(Touch_Key)
+	{
+		Touch_Cont = 0;
+		Touch_Flag = 1;
+	}
+}
+#endif
+
+
+void Test_LED(void)
+{
+	if(Touch_Key == 0)
+	{
+		Test_IO = 0;
+	}
+	else
+	{
+		Test_IO = 1;
+	}
+}
+
+
+
+
+
+
+
+
+#if 1		//RGB驱动
+/*****************************/
+//系统时钟8M时使用
+void Send_L()
+{
+/*	RGB = 1;
+	.delay 2; // 系统时钟8MHZ使用
+	RGB = 0;
+	.delay 6;*/
+
+	
+    RGB = 1;
+	.delay 2; // 系统时钟8MHZ使用
+	RGB = 0;
+	.delay 5;
+}
+void Send_H()
+{
+/*	RGB = 1;
+	.delay 7;
+	RGB = 0;
+	.delay 9;*/
+
+	RGB =1;
+	.delay 6;
+	RGB =0;
+	.delay 9;
+
+}
+/*********************************/
+void Reset_RGB(void)
+{
+	RGB =0;
+	.delay 2400;
+
+}
+/******************************/
+void Write_Data(eword data)
+{
+	byte i = 0;
+	while(i < 24)
+	{
+		if(data & 0x800000)
+		{
+			Send_H();
+		}
+		else
+		{
+			Send_L();
+		}
+		data <<= 1;
+		i++;
+	}
+}
+void Send_Data(eword data)
+{	SET0 INTEN.2
+	Write_Data(data);
+	SET1 INTEN.2
+}
+void RGB_Init(void)
+{
+
+	byte RGB_Flag;
+	Reset_RGB(); //复位
+	RGB_Flag =	RGB_NUM;	//获取灯的数量
+	Color_Data = ((Color_G << 16) | (Color_R << 8) | Color_B);
+	while(RGB_Flag)
+	{
+		Send_Data(Color_Data);
+		RGB_Flag--;
+	}
+}
+#endif
+
+
+
+#if 1		
+
+//GRB
+void Test1(void){		
+	switch(Color_Flag)  
+	  {  
+	  	/**********/  
+	   case 0:  	
+	     Temp_R = 0;  
+	     Temp_G = 0;  
+	     Temp_B = 0;  
+	     Color_Flag = 1;  
+	    break;  
+		/**********/
+	   case 1: 
+	     if(Temp_B > 0)  
+	      Temp_B--;  
+	     if(Temp_R > 0)  
+	      Temp_R--;  
+	     if(Temp_G > 0)    
+	      Temp_G--;       
+	     else
+	       Color_Flag = 2;  
+	    break; 
+	    /**********/ 
+	  
+	   case 2:   		 		
+	   		Temp_G += 5;
+			if(Temp_G >= 125)
+			{
+				Temp_R += 5; 	
+			}
+	     if(Temp_G >= 245){ 	
+		      Temp_G = 245;
+		      }          
+	     if(Temp_R >= 245)      
+	     {  
+	      Temp_R = 245; 	
+	      Color_Flag = 3;       //跳下一
+	     }  
+	    break; 
+	    /**********/     
+	   case 3:  			
+	   		Temp_G -= 5;
+	   		Temp_B += 5;  		
+	     if(Temp_G <= 10)  	
+	      	{Temp_G = 5;}
+	     if(Temp_B >= 245) { 
+	      Temp_B = 245;   
+	      Color_Flag = 4;  
+	     }  
+	    break;
+	    /**********/  
+	   case 4:  
+	   		Temp_R -= 5; 
+	     if(Temp_B <= 10)  	
+	        Temp_R = 5;
+	    	Temp_B -= 5;
+	     if(Temp_B <= 10)  
+	     {   
+	      Temp_B = 0;  
+	      Test_Flag += 2;
+			RGB_Mode += 2;	
+			if(RGB_Mode > 14)
+			{
+				RGB_Mode -= 15;
+			}
+		   Color_Flag = 0;
+		     if(Test_Flag > 6)
+		     {
+		     	Test_Flag = Test_Flag - 7;
+		     }	
+			QEFAN;
+	     }  
+	    break; 
+	    /**********/         
+	  } 
+}
+
+//RGB
+void Test2(void){
+	switch(Color_Flag)  
+	  {  
+	  	/**********/  
+	   case 0:  	//清空占空比
+	     Temp_R = 0;  
+	     Temp_G = 0;  
+	     Temp_B = 0;  
+	     Color_Flag = 2;  
+	    break;  
+		/**********/
+	   case 1: 
+	     if(Temp_B > 0)  
+	      Temp_B--;  
+	     if(Temp_R > 0)  
+	      Temp_R--;  
+	     if(Temp_G > 0)    
+	      Temp_G--;       
+	     else
+	       Color_Flag = 2;  
+	    break; 
+	    /**********/ 
+	   case 2:   		 		//最亮
+	   		Temp_R += 5;
+			if(Temp_R >= 125)
+			{
+		      Temp_G += 5; 		
+			}
+	     if(Temp_R >= 245){ 
+		      Temp_R = 245;
+ 
+		      }          
+	     if(Temp_G >= 245)      
+	     {  
+	      Temp_G = 245; 		
+	      Color_Flag = 3;       //跳下一个
+				Flag_a = 1;		//开启另外两个灯
+			/*	Test_Mode = RGB_Mode + 1;	//灯的位置
+				if(Test_Mode > 14)
+				{
+					Test_Mode = Test_Mode - 15;
+				}
+				QEFAN;*/
+	     }  
+	    break; 
+	    /**********/     
+	   case 3:  			
+	   		Temp_R -= 5;
+	   		Temp_B += 5;  	
+	     if(Temp_R <= 10)  	
+	      	{Temp_R = 5;}
+	     if(Temp_B >= 245) { 
+	      Temp_G = 245;   
+	      Color_Flag = 4;  
+	     }  
+	    break;
+	    /**********/  
+	   case 4:  			//最暗
+	   		Temp_G -= 5; 
+	     if(Temp_B <= 10)  	
+	        Temp_G = 5;
+	    	Temp_B -= 5;
+	     if(Temp_B <= 10)  
+	     {   
+	      Temp_B = 0; 
+		   Color_Flag = 0;
+			RGB_Mode += 2;	
+			if(RGB_Mode > 14)
+			{
+				RGB_Mode -= 15;
+			}
+	      Test_Flag += 2;
+		     if(Test_Flag > 6)
+		     {
+		     	Test_Flag = Test_Flag - 7;
+		     }
+	     }  
+	    break; 
+	    /**********/         
+	  } 
+}
+
+
+//GBR
+void Test3(void){
+	switch(Color_Flag)  
+	  {  
+	  	/**********/  
+	   case 0:  
+	     Temp_R = 0;  
+	     Temp_G = 0;  
+	     Temp_B = 0;  
+	     Color_Flag = 1;  
+	    break;  
+		/**********/
+
+
+	   case 1: 		
+	     if(Temp_B > 0)  
+	      Temp_B--;  
+	     if(Temp_R > 0)  
+	      Temp_R--;  
+	     if(Temp_G > 0)    
+	      Temp_G--;       
+	     else
+	       Color_Flag = 2;  
+	    break; 
+	    /**********/ 
+	   case 2:   		 		
+	   		Temp_G += 5;
+	     if(Temp_G >= 245){ 	
+		      Temp_G = 245;
+		      Temp_B += 5; 		  
+		      }          
+	     if(Temp_B >= 245)      
+	     {  
+	      Temp_B = 245; 		
+	      Color_Flag = 3;       //跳下一
+	     }  
+	    break; 
+	    /**********/     
+	   case 3:  			
+	   		Temp_G -= 5;
+	   		Temp_R += 5;  	
+	     if(Temp_G <= 10)  	
+	      	{Temp_G = 5;}
+	     if(Temp_R >= 245) {  
+	      Temp_R = 245;   
+	      Color_Flag = 4;  
+	     }  
+	    break;
+	    /**********/  
+	   case 4:  
+	   		Temp_B -= 5; 
+	     if(Temp_R <= 10)  	
+	        Temp_B = 5;
+	    	Temp_R -= 5;
+	     if(Temp_R <= 10)  
+	     {   
+	      Temp_R = 0;
+		   Color_Flag = 0;
+			RGB_Mode += 2;	
+			if(RGB_Mode > 14)
+			{
+				RGB_Mode -= 15;
+			}
+	      Test_Flag += 2;
+		    if(Test_Flag > 6)
+		    {
+		   		Test_Flag = Test_Flag - 7;
+		    }	
+			QEFAN;
+	     }  
+	    break; 
+	    /**********/         
+	  } 
+}
+
+//RBG
+void Test4(void){
+		switch(Color_Flag)  
+	  {  
+	  	/**********/  
+	   case 0:  
+	     Temp_R = 0;  
+	     Temp_G = 0;  
+	     Temp_B = 0;  
+	     Color_Flag = 1;  
+	    break;  
+		/**********/
+	   case 1: 
+	     if(Temp_B > 0)  
+	      Temp_B--;  
+	     if(Temp_R > 0)  
+	      Temp_R--;  
+	     if(Temp_G > 0)    
+	      Temp_G--;       
+	     else
+	       Color_Flag = 2;  
+	    break; 
+	    /**********/ 
+	   case 2:   		 		
+	   		Temp_R += 5;
+			if(Temp_R >=125)
+			{
+		      Temp_B += 5; 	
+			}
+	     if(Temp_R >= 245){ 	
+		      Temp_R = 245;
+
+		      }          
+	     if(Temp_B >= 245)     
+	     {  
+	      Temp_B = 245; 		
+	      Color_Flag = 3;       //跳下
+	     }  
+	    break; 
+	    /**********/     
+	   case 3:  			
+	   		Temp_R -= 5;
+	   		Temp_G += 5;  		
+	     if(Temp_R <= 10)  	
+	      	{Temp_R = 5;}
+	     if(Temp_G >= 245) { 
+	      Temp_B = 245;   
+	      Color_Flag = 4;  
+	     }  
+	    break;
+	    /**********/  
+	   case 4:  
+	   		Temp_B -= 5; 
+	     if(Temp_G <= 10)  	
+	        Temp_B = 5;
+	    	Temp_G -= 5;
+	     if(Temp_G <= 10)  
+	     {   
+	      Temp_G = 0;  
+		   Color_Flag = 0;
+			RGB_Mode += 2;	
+			if(RGB_Mode > 14)
+			{
+				RGB_Mode -= 15;
+			}
+	      Test_Flag += 2;
+		     if(Test_Flag > 6)
+		     {
+		     	Test_Flag = Test_Flag - 7;
+		     }		
+			QEFAN;
+	     }  
+	    break; 
+	    /**********/         
+	  } 
+}
+
+//BGR
+void Test5(void)
+{
+	switch(Color_Flag)  
+	  {  
+	  	/**********/  
+	   case 0:  
+	     Temp_R = 0;  
+	     Temp_G = 0;  
+	     Temp_B = 0;  
+	     Color_Flag = 1;  
+	    break;  
+		/**********/
+	   case 1: 
+	     if(Temp_B > 0)  
+	      Temp_B--;  
+	     if(Temp_R > 0)  
+	      Temp_R--;  
+	     if(Temp_G > 0)    
+	      Temp_G--;       
+	     else
+	       Color_Flag = 2;  
+	    break; 
+	    /**********/ 
+	   case 2:   		 		
+	   		Temp_B += 5;
+			if(Temp_B)
+			{
+		      Temp_G += 5; 	
+			}
+	     if(Temp_B >= 245){ 
+		      Temp_B = 245;
+ 
+		      }          
+	     if(Temp_G >= 245)     
+	     {  
+	      Temp_G = 245; 	
+	      Color_Flag = 3;     
+	     }  
+	    break; 
+	    /**********/     
+	   case 3:  			
+	   		Temp_B -= 5;
+	   		Temp_R += 5;  	
+	     if(Temp_B <= 10)  	
+	      	{Temp_B = 5;}
+	     if(Temp_R >= 245) {
+	      Temp_G = 245;   
+	      Color_Flag = 4;  
+	     }  
+	    break;
+	    /**********/  
+	   case 4:  
+	   		Temp_G -= 5; 
+	     if(Temp_R <= 10)  	
+	        Temp_G = 5;
+	    	Temp_R -= 5;
+	     if(Temp_R <= 10)  
+	     {   
+	      Temp_R = 0;  
+		   Color_Flag = 0;
+			RGB_Mode += 2;	
+			if(RGB_Mode > 14)
+			{
+				RGB_Mode -= 15;
+			}
+	      Test_Flag += 2;
+		     if(Test_Flag > 6)
+		     {
+		     	Test_Flag = Test_Flag - 7;
+		     }	
+	     }  
+	    break; 
+	    /**********/         
+	  } 
+}
+
+//BRG
+void Test6(void)
+{
+		switch(Color_Flag)  
+	  {  
+	  	/**********/  
+	   case 0:  	
+	     Temp_R = 0;  
+	     Temp_G = 0;  
+	     Temp_B = 0;  
+	     Color_Flag = 1;  
+	    break;  
+		/**********/
+	   case 1: 
+	     if(Temp_B > 0)  
+	      Temp_B--;  
+	     if(Temp_R > 0)  
+	      Temp_R--;  
+	     if(Temp_G > 0)    
+	      Temp_G--;       
+	     else
+	       Color_Flag = 2;  
+	    break; 
+	    /**********/ 
+	   case 2:   		 		
+	   		Temp_B += 5;
+			if(Temp_B >= 125)
+			{
+		      Temp_R += 5; 
+			}
+	     if(Temp_B >= 245){ 	
+		      Temp_B = 245;
+		      }          
+	     if(Temp_R >= 245)      
+	     {  
+	      Temp_R = 245; 		
+	      Color_Flag = 3;       
+	     }  
+	    break; 
+	    /**********/     
+	   case 3:  			
+	   		Temp_B -= 5;
+	   		Temp_G += 5;  		 
+	     if(Temp_B <= 10)  	
+	      	{Temp_B = 5;}
+	     if(Temp_G >= 245) {  
+	      Temp_R = 245;   
+	      Color_Flag = 4;  
+	     }  
+	    break;
+	    /**********/  
+	   case 4:  
+	   		Temp_R -= 5; 
+	     if(Temp_G <= 10)  	
+	        Temp_R = 5;
+	    	Temp_G -= 5;
+	     if(Temp_G <= 10)  
+	     {   
+	      Temp_G = 0;
+		  Color_Flag = 0;
+			RGB_Mode += 2;	
+			if(RGB_Mode > 14)
+			{
+				RGB_Mode -= 15;
+			}
+	      Test_Flag += 2;
+		     if(Test_Flag > 6)
+		     {
+		     	Test_Flag = Test_Flag - 7;
+		     }	
+	     }  
+	    break; 
+	    /**********/         
+	  } 
+}
+
+
+
+//GRB
+void Test7(void){		
+	switch(Color_Flag1)  
+	  {  
+	  	/**********/  
+	   case 0:  	
+	     Color_R = 0;  
+	     Color_G = 0;  
+	     Color_B = 0;  
+	     Color_Flag1 = 1;  
+	    break;  
+		/**********/
+	   case 1: 
+	     if(Color_B > 0)  
+	      Color_B--;  
+	     if(Color_R > 0)  
+	      Color_R--;  
+	     if(Color_G > 0)    
+	      Color_G--;       
+	     else
+	       Color_Flag1 = 2;  
+	    break; 
+	    /**********/ 
+	  
+	   case 2:   		 		
+	   		Color_G += 5;
+			if(Color_G >= 125)
+			{
+				Color_R += 5; 	
+			}
+	     if(Color_G >= 245){ 	
+		      Color_G = 245;
+		      }          
+	     if(Color_R >= 245)      
+	     {  
+	      Color_R = 245; 	
+	      Color_Flag1 = 3;       //跳下一个 
+	     }  
+	    break; 
+	    /**********/     
+	   case 3:  			
+	   		Color_G -= 5;
+	   		Color_B += 5;  		
+	     if(Color_G <= 10)  	
+	      	{Color_G = 5;}
+	     if(Color_B >= 245) { 
+	      Color_B = 245;   
+	      Color_Flag1 = 4;  
+	     }  
+	    break;
+	    /**********/  
+	   case 4:  
+	   		Color_R -= 5; 
+	     if(Temp_B <= 10)  	
+	        Color_R = 5;
+	    	Temp_B -= 5;
+	     if(Temp_B <= 10)  
+	     {   
+	      Temp_B = 0;  
+
+		   Color_Flag1 = 0;
+		   		Test_Mode = RGB_Mode + 1;	//灯的位置
+				if(Test_Mode > 14)
+				{
+					Test_Mode = Test_Mode - 15;
+				}
+
+	     }  
+	    break; 
+	    /**********/         
+	  } 
+}
+
+//RGB
+void Test8(void){
+	switch(Color_Flag1)  
+	  {  
+	  	/**********/  
+	   case 0:  	//清空占空比
+	     Color_R = 0;  
+	     Color_G = 0;  
+	     Color_B = 0;  
+	     Color_Flag1 = 1;  
+	    break;  
+		/**********/
+	   case 1: 
+	     if(Color_B > 0)  
+	      Color_B--;  
+	     if(Color_R > 0)  
+	      Color_R--;  
+	     if(Color_G > 0)    
+	      Color_G--;       
+	     else
+	       Color_Flag1 = 2;  
+	    break; 
+	    /**********/ 
+	   case 2:   		 		
+	   		Color_R += 5;
+			if(Color_R >= 125)
+			{
+		      Color_G += 5; 		
+			}
+	     if(Color_R >= 245){ 
+		      Color_R = 245;
+ 
+		      }          
+	     if(Color_G >= 245)      
+	     {  
+	      Color_G = 245; 		
+	      Color_Flag1 = 3;       //跳下一个
+	     }  
+	    break; 
+	    /**********/     
+	   case 3:  			
+	   		Color_R -= 5;
+	   		Color_B += 5;  	
+	     if(Color_R <= 10)  	
+	      	{Color_R = 5;}
+	     if(Color_B >= 245) { 
+	      Color_G = 245;   
+	      Color_Flag1 = 4;  
+	     }  
+	    break;
+	    /**********/  
+	   case 4:  
+	   		Color_G -= 5; 
+	     if(Color_G <= 10)  	
+	        Color_G = 5;
+	    	Color_B -= 5;
+	     if(Color_B <= 10)  
+	     {   
+	      Color_B = 0; 
+		   Color_Flag1 = 0;
+		   		Test_Mode = RGB_Mode + 1;	//灯的位置
+				if(Test_Mode > 14)
+				{
+					Test_Mode = Test_Mode - 15;
+				}
+
+	     }  
+	    break; 
+	    /**********/         
+	  } 
+}
+
+
+//GBR
+void Test9(void){
+	switch(Color_Flag1)  
+	  {  
+	  	/**********/  
+	   case 0:  
+	     Color_R = 0;  
+	     Color_G = 0;  
+	     Color_B = 0;  
+	     Color_Flag1 = 1;  
+	    break;  
+		/**********/
+
+
+	   case 1: 		
+	     if(Color_B > 0)  
+	      Color_B--;  
+	     if(Color_R > 0)  
+	      Color_R--;  
+	     if(Color_G > 0)    
+	      Color_G--;       
+	     else
+	       Color_Flag1 = 2;  
+	    break; 
+	    /**********/ 
+	   case 2:   		 		
+	   		Color_G += 5;
+	     if(Color_G >= 245){ 	
+		      Color_G = 245;
+		      Color_B += 5; 		  
+		      }          
+	     if(Color_B >= 245)      
+	     {  
+	      Color_B = 245; 		
+	      Color_Flag1 = 3;       //跳下一个 
+	     }  
+	    break; 
+	    /**********/     
+	   case 3:  			
+	   		Color_G -= 5;
+	   		Color_R += 5;  	
+	     if(Color_G <= 10)  	
+	      	{Color_G = 5;}
+	     if(Color_R >= 245) {  
+	      Color_R = 245;   
+	      Color_Flag1 = 4;  
+	     }  
+	    break;
+	    /**********/  
+	   case 4:  
+	   		Color_B -= 5; 
+	     if(Color_B <= 10)  	
+	        Color_B = 5;
+	    	Color_R -= 5;
+	     if(Color_R <= 10)  
+	     {   
+	      Color_R = 0;
+		   Color_Flag1 = 0;
+		   		Test_Mode = RGB_Mode + 1;	//灯的位置
+				if(Test_Mode > 14)
+				{
+					Test_Mode = Test_Mode - 15;
+				}
+	     }  
+	    break; 
+	    /**********/         
+	  } 
+}
+
+//RBG
+void Test10(void){
+		switch(Color_Flag1)  
+	  {  
+	  	/**********/  
+	   case 0:  
+	     Color_R = 0;  
+	     Color_G = 0;  
+	     Color_B = 0;  
+	     Color_Flag1 = 1;  
+	    break;  
+		/**********/
+	   case 1: 
+	     if(Color_B > 0)  
+	      Color_B--;  
+	     if(Color_R > 0)  
+	      Color_R--;  
+	     if(Color_G > 0)    
+	      Color_G--;       
+	     else
+	       Color_Flag1 = 2;  
+	    break; 
+	    /**********/ 
+	   case 2:   		 		
+	   		Color_R += 5;
+			if(Color_R >=125)
+			{
+		      Color_B += 5; 	
+			}
+	     if(Color_R >= 245){ 	
+		      Color_R = 245;
+
+		      }          
+	     if(Color_B >= 245)     
+	     {  
+	      Color_B = 245; 		
+	      Color_Flag1 = 3;       //跳下一个
+	     }  
+	    break; 
+	    /**********/     
+	   case 3:  			
+	   		Color_R -= 5;
+	   		Color_G += 5;  		
+	     if(Color_R <= 10)  	
+	      	{Color_R = 5;}
+	     if(Color_G >= 245) { 
+	      Color_G = 245;   
+	      Color_Flag1 = 4;  
+	     }  
+	    break;
+	    /**********/  
+	   case 4:  
+	   		Color_B -= 5; 
+	     if(Color_B <= 10)  	
+	        Color_B = 5;
+	    	Color_G -= 5;
+	     if(Color_G <= 10)  
+	     {   
+	      Color_G = 0;  
+		   Color_Flag1 = 0;
+		   		Test_Mode = RGB_Mode + 1;	//灯的位置
+				if(Test_Mode > 14)
+				{
+					Test_Mode = Test_Mode - 15;
+				}
+
+	     }  
+	    break; 
+	    /**********/         
+	  } 
+}
+
+//BGR
+void Test11(void)
+{
+	switch(Color_Flag1)  
+	  {  
+	  	/**********/  
+	   case 0:  
+	     Color_R = 0;  
+	     Color_G = 0;  
+	     Color_B = 0;  
+	     Color_Flag1 = 1;  
+	    break;  
+		/**********/
+	   case 1: 
+	     if(Color_B > 0)  
+	      Color_B--;  
+	     if(Color_R > 0)  
+	      Color_R--;  
+	     if(Color_G > 0)    
+	      Color_G--;       
+	     else
+	       Color_Flag1 = 2;  
+	    break; 
+	    /**********/ 
+	   case 2:   		 		
+	   		Color_B += 5;
+			if(Color_B)
+			{
+		      Color_G += 5; 	
+			}
+	     if(Color_B >= 245){ 
+		      Color_B = 245;
+ 
+		      }          
+	     if(Color_G >= 245)     
+	     {  
+	      Color_G = 245; 	
+	      Color_Flag1 = 3;     
+	     }  
+	    break; 
+	    /**********/     
+	   case 3:  			
+	   		Color_B -= 5;
+	   		Color_R += 5;  	
+	     if(Color_B <= 10)  	
+	      	{Color_B = 5;}
+	     if(Color_R >= 245) {
+	      Color_G = 245;   
+	      Color_Flag = 4;  
+	     }  
+	    break;
+	    /**********/  
+	   case 4:  
+	   		Color_G -= 5; 
+	     if(Color_G <= 10)  	
+	        Color_G = 5;
+	    	Color_R -= 5;
+	     if(Color_R <= 10)  
+	     {   
+	      Color_R = 0;  
+		   Color_Flag1 = 0;
+		   		Test_Mode = RGB_Mode + 1;	//灯的位置
+				if(Test_Mode > 14)
+				{
+					Test_Mode = Test_Mode - 15;
+				}
+
+	     }  
+	    break; 
+	    /**********/         
+	  } 
+}
+
+//BRG
+void Test12(void)
+{
+		switch(Color_Flag1)  
+	  {  
+	  	/**********/  
+	   case 0:  	
+	     Color_R = 0;  
+	     Color_G = 0;  
+	     Color_B = 0;  
+	     Color_Flag1 = 1;  
+	    break;  
+		/**********/
+	   case 1: 
+	     if(Color_B > 0)  
+	      Color_B--;  
+	     if(Color_R > 0)  
+	      Color_R--;  
+	     if(Color_G > 0)    
+	      Color_G--;       
+	     else
+	       Color_Flag1 = 2;  
+	    break; 
+	    /**********/ 
+	   case 2:   		 		
+	   		Color_B += 5;
+			if(Color_B >= 125)
+			{
+		      Color_R += 5; 
+			}
+	     if(Color_B >= 245){ 	
+		      Color_B = 245;
+		      }          
+	     if(Color_R >= 245)      
+	     {  
+	      Color_R = 245; 		
+	      Color_Flag1 = 3;       
+	     }  
+	    break; 
+	    /**********/     
+	   case 3:  			
+	   		Color_B -= 5;
+	   		Color_G += 5;  		 
+	     if(Color_B <= 10)  	
+	      	{Color_B = 5;}
+	     if(Color_G >= 245) {  
+	      Color_R = 245;   
+	      Color_Flag1 = 4;  
+	     }  
+	    break;
+	    /**********/  
+	   case 4:  
+	   		Color_R -= 5; 
+	     if(Color_G <= 10)  	
+	        Color_R = 5;
+	    	Color_G -= 5;
+	     if(Color_G <= 10)  
+	     {   
+	      Color_G = 0;
+		  Color_Flag1 = 0;
+		   		Test_Mode = RGB_Mode + 1;	//灯的位置
+				if(Test_Mode > 14)
+				{
+					Test_Mode = Test_Mode - 15;
+				}
+
+	     }  
+	    break; 
+	    /**********/         
+	  } 
+}
+
+
+
+
+
+
+u8 Cont_Flag;
+
+void Test(void)
+{
+	u8 RGB_Position = 0;
+	u8 Temp_Data = 0;
+	u24 Next_Color = 0;
+	u24 Current_Color = 0;
+
+	switch(Test_Flag)
+	{
+		case 0:
+			Test_Flag += 2;
+			break;
+		case 1:
+			test1();
+			break;
+		case 2:
+			test2();
+			break;
+		case 3:
+			test3();
+			break;
+		case 4:
+			test4();
+			break;
+		case 5:
+			test5();
+			break;
+		case 6:
+			test6();
+			break;
+	}
+	Color_Data = (Temp_G<<16 | Temp_R<<8 | Temp_B);
+	if(Flag_a){
+		switch(Test_Flag1)
+		{
+			case 0:
+				Test_Flag1 += 2;
+				break;
+			case 1:
+				test7();
+				break;
+			case 2:
+				test8();
+				break;
+			case 3:
+				test9();
+				break;
+			case 4:
+				test10();
+				break;
+			case 5:
+				test11();
+				break;
+			case 6:
+				test12();
+				break;
+			default:
+				Test_Flag1 = 0;
+		}
+		Next_Color = (Color_G<<16 | Color_R<<8 | Color_B);
+	}
+	else
+	{
+		Next_Color = (5<<16 | 5<<8 | 5);
+	}
+	switch(RGB_Mode){
+	case 0:
+		RGB_Position = RGB_Position | 0x03;
+		break;
+	case 1:
+		RGB_Position = RGB_Position | 0x0c;
+		break;
+	case 2:
+		RGB_Position = RGB_Position | 0x30;
+		break;
+	case 3:
+		RGB_Position = RGB_Position | 0x05;
+		break;
+	case 4:
+		RGB_Position = RGB_Position | 0x0a;
+		break;
+	case 5:
+		RGB_Position = RGB_Position | 0x14;
+		break;
+	case 6:
+		RGB_Position = RGB_Position | 0x28;
+		break;
+	case 7:
+		RGB_Position = RGB_Position | 0x11;
+		break;
+	case 8:
+		RGB_Position = RGB_Position | 0x06;
+		break;
+	case 9:
+		RGB_Position = RGB_Position | 0x09;
+		break;
+	case 10:
+		RGB_Position = RGB_Position | 0x24;
+		break;
+	case 11:
+		RGB_Position = RGB_Position | 0x18;
+		break;
+	case 12:
+		RGB_Position = RGB_Position | 0x06;
+		break;
+	case 13:
+		RGB_Position = RGB_Position | 0x21;
+		break;
+	case 14:
+		RGB_Position = RGB_Position | 0x14;
+		break;
+	}
+//	 Test_Mode = RGB_Mode + 1;
+	if(Flag_a){
+		switch(Test_Mode){
+		case 0:
+			Temp_Data = Temp_Data | 0x03;
+			break;
+		case 1:
+			Temp_Data = Temp_Data | 0x0c;
+			break;
+		case 2:
+			Temp_Data = Temp_Data | 0x30;
+			break;
+		case 3:
+			Temp_Data = Temp_Data | 0x05;
+			break;
+		case 4:
+			Temp_Data = Temp_Data | 0x0a;
+			break;
+		case 5:
+			Temp_Data = Temp_Data | 0x14;
+			break;
+		case 6:
+			Temp_Data = Temp_Data | 0x28;
+			break;
+		case 7:
+			Temp_Data = Temp_Data | 0x11;
+			break;
+		case 8:
+			Temp_Data = Temp_Data | 0x06;
+			break;
+		case 9:
+			Temp_Data = Temp_Data | 0x09;
+			break;
+		case 10:
+			Temp_Data = Temp_Data | 0x24;
+			break;
+		case 11:
+			Temp_Data = Temp_Data | 0x18;
+			break;
+		case 12:
+			Temp_Data = Temp_Data | 0x06;
+			break;
+		case 13:
+			Temp_Data = Temp_Data | 0x21;
+			break;
+		case 14:
+			Temp_Data = Temp_Data | 0x14;
+			break;
+		}
+	}
+	u8 i= 0;
+	u24 Test_Temp;
+	Current_Color = (5<<16 | 5<<8 | 5);
+	Reset_RGB();
+	while(i < RGB_NUM)
+	{
+		Test_Temp = Current_Color;
+
+		if(RGB_Position & 0x01)
+		{
+			Test_temp = Color_Data;
+		}
+		if(Temp_Data & 0x01)
+		{
+			Test_Temp = Next_Color;
+		}
+		Send_Data(Test_Temp);
+		RGB_Position >>= 1;
+		Temp_Data >>= 1;
+		i++;
+	}
+	RGB_Position = 0;
+	Temp_Data = 0;
+}
+
+
+
+
+void Turn_OFF_RGB(void)
+{
+//	Sys_Init();
+/*	RGB_Mode = 0;
+	Temp_R = 0;
+	Temp_G = 0;
+	Temp_B = 0;
+	Test_Mode = 0;
+	Color_R = 0;
+	Color_G = 0;
+	Color_B = 0;
+	Flag_a = 0;*/
+
+
+	Test_Mode = 0;
+	Flag_a = 0;
+
+	Color_R = 5;
+	Color_G = 5;
+	Color_B = 5;
+	Color_Data = 2;
+
+	R_Flag = 1;
+	G_Flag = 0;
+	B_Flag = 0;
+	R_Flag1 = 1;
+	G_Flag1 = 0;
+	B_Flag1 = 0;
+
+
+	 Temp_R = 5;
+	 Temp_G = 5;
+	 Temp_B = 5;
+	 Color_Flag = 0;
+	 Color_Flag1 = 0;
+	 Test_Flag = 2;
+	 Test_Flag1 = 0;
+	 RGB_Mode = 0;
+
+
+
+
+
+
+
+
+
+
+	$ RGB_EN out,high;
+}
+
+
+void Display_Mode(void)
+{	
+	switch(LED_Mode)
+	{
+		case 0:		//关闭RGB 关闭LED
+			Turn_OFF_RGB();
+			TURN_OFF_LED;
+			break;
+		case 1:		//开启RGB 关闭LED
+			$ RGB_EN out,low;	//RGB电源引脚
+			Test();
+			TURN_OFF_LED;
+			break;
+		case 2:		//开启LED 关闭RGB
+			Turn_OFF_RGB();
+			TURN_ON_LED;
+			break;
+	}
+}
+
+
+
+
+#endif
+
+bit _30ms;
+/*******定时器*********/
+void T16_Init(void)
+{
+	$ Timer     T16, 8;		//2（1/2/4/8/.../128/256）ms  设置T6M 1ms延时中断
+	INTRQ = 0;	//清除
+	ENGINT;		//开启总
+	$ INTEN T16;	//开启T16M定时中断
+
+}
+
+void	FPPA0 (void)
+{
+	.ADJUST_IC	SYSCLK=IHRC/2,VDD = 5.0v;		//	SYSCLK=IHRC/4
+
+	IO_Init();
+	Sys_Init();
+	T16_Init();
+	RGB_Init();
+	while (1)
+	{
+		if(_30ms)
+		{
+			Display_Mode();
+			_30ms = 0;
+		}
+	}
+}
+
+
+void	Interrupt (void)
+{
+	pushaf;
+u8 Cont;
+	if (Intrq.T16)
+	{	//	T16 Trig
+		//	User can add code
+		Intrq.T16	=	0;
+		Key_Scan();
+		Touch_Scan();
+		Test_LED();
+		Cont++;
+		if(Cont > 2)
+		{
+			_30ms = 1;
+			Cont = 0;
+		}
+	}
+
+	popaf;
+}
